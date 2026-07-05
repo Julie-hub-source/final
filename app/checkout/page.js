@@ -28,10 +28,15 @@ export default function CheckoutPage() {
       const userData = JSON.parse(userStr);
       setUser(userData);
 
-      // Load amount từ localStorage nếu có
+      // Load amount và product name từ localStorage
       const savedAmount = localStorage.getItem('lastOrderAmount');
       if (savedAmount) {
         setAmount(parseInt(savedAmount));
+      }
+
+      const savedProductName = localStorage.getItem('selectedProductName');
+      if (savedProductName) {
+        setProductName(savedProductName);
       }
     } catch (err) {
       router.push('/login');
