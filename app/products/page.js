@@ -79,12 +79,15 @@ export default function ProductsPage() {
                   <span className="text-2xl font-bold text-blue-600">
                     {product.price.toLocaleString('vi-VN')} ₫
                   </span>
-                  <Link
-                    href="/checkout"
+                  <button
+                    onClick={() => {
+                      localStorage.setItem('lastOrderAmount', product.price.toString());
+                      window.location.href = '/checkout';
+                    }}
                     className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg transition duration-200"
                   >
                     Mua
-                  </Link>
+                  </button>
                 </div>
               </div>
             </div>
