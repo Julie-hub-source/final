@@ -15,7 +15,6 @@ const getStatusColor = (status) => {
     pending: 'bg-yellow-100 text-yellow-800 border-l-4 border-yellow-600',
     processing: 'bg-blue-100 text-blue-800 border-l-4 border-blue-600',
     completed: 'bg-green-100 text-green-800 border-l-4 border-green-600',
-    cancelled: 'bg-red-100 text-red-800 border-l-4 border-red-600',
   };
   return colors[status] || colors.pending;
 };
@@ -23,12 +22,11 @@ const getStatusColor = (status) => {
 // Helper: Get status label
 const getStatusLabel = (status) => {
   const labels = {
-    pending: '⏳ Chờ xác nhận',
-    processing: '🔄 Đang xử lý',
-    completed: '✓ Hoàn thành',
-    cancelled: '✕ Đã hủy',
+    pending: '📦 Chờ lấy hàng',
+    processing: '🚚 Chờ giao hàng',
+    completed: '✅ Đã giao',
   };
-  return labels[status] || 'Chờ xác nhận';
+  return labels[status] || 'Chờ lấy hàng';
 };
 
 export default function OrdersPage() {
@@ -128,29 +126,23 @@ export default function OrdersPage() {
         ) : (
           <div className="space-y-6">
             {/* Stats Row */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-white rounded-lg shadow p-6 border-l-4 border-yellow-600">
-                <p className="text-gray-600 text-sm">Chờ xác nhận</p>
+                <p className="text-gray-600 text-sm">Chờ lấy hàng</p>
                 <p className="text-3xl font-bold text-yellow-600">
                   {orders.filter(o => o.status === 'pending').length}
                 </p>
               </div>
               <div className="bg-white rounded-lg shadow p-6 border-l-4 border-blue-600">
-                <p className="text-gray-600 text-sm">Đang xử lý</p>
+                <p className="text-gray-600 text-sm">Chờ giao hàng</p>
                 <p className="text-3xl font-bold text-blue-600">
                   {orders.filter(o => o.status === 'processing').length}
                 </p>
               </div>
               <div className="bg-white rounded-lg shadow p-6 border-l-4 border-green-600">
-                <p className="text-gray-600 text-sm">Hoàn thành</p>
+                <p className="text-gray-600 text-sm">Đã giao</p>
                 <p className="text-3xl font-bold text-green-600">
                   {orders.filter(o => o.status === 'completed').length}
-                </p>
-              </div>
-              <div className="bg-white rounded-lg shadow p-6 border-l-4 border-red-600">
-                <p className="text-gray-600 text-sm">Đã hủy</p>
-                <p className="text-3xl font-bold text-red-600">
-                  {orders.filter(o => o.status === 'cancelled').length}
                 </p>
               </div>
             </div>

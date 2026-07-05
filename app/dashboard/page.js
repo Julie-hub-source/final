@@ -109,10 +109,10 @@ export default function DashboardPage() {
           <div className="bg-white rounded-lg shadow-md p-6 border-l-4 border-yellow-600">
             <div className="flex justify-between items-start">
               <div>
-                <p className="text-gray-600 text-sm font-semibold">Chờ Xác Nhận</p>
+                <p className="text-gray-600 text-sm font-semibold">Chờ Lấy Hàng</p>
                 <p className="text-3xl font-bold text-yellow-600 mt-2">{pendingOrders}</p>
               </div>
-              <span className="text-4xl">⏳</span>
+              <span className="text-4xl">📦</span>
             </div>
           </div>
 
@@ -120,10 +120,10 @@ export default function DashboardPage() {
           <div className="bg-white rounded-lg shadow-md p-6 border-l-4 border-blue-500">
             <div className="flex justify-between items-start">
               <div>
-                <p className="text-gray-600 text-sm font-semibold">Đang Xử Lý</p>
+                <p className="text-gray-600 text-sm font-semibold">Chờ Giao Hàng</p>
                 <p className="text-3xl font-bold text-blue-500 mt-2">{processingOrders}</p>
               </div>
-              <span className="text-4xl">🔄</span>
+              <span className="text-4xl">🚚</span>
             </div>
           </div>
 
@@ -131,10 +131,10 @@ export default function DashboardPage() {
           <div className="bg-white rounded-lg shadow-md p-6 border-l-4 border-green-600">
             <div className="flex justify-between items-start">
               <div>
-                <p className="text-gray-600 text-sm font-semibold">Hoàn Thành</p>
+                <p className="text-gray-600 text-sm font-semibold">Đã Giao</p>
                 <p className="text-3xl font-bold text-green-600 mt-2">{completedOrders}</p>
               </div>
-              <span className="text-4xl">✓</span>
+              <span className="text-4xl">✅</span>
             </div>
           </div>
         </div>
@@ -217,12 +217,10 @@ export default function DashboardPage() {
                     </p>
                     <p className="text-sm text-gray-600">
                       {order.status === 'pending'
-                        ? '⏳ Chờ xác nhận'
+                        ? '📦 Chờ lấy hàng'
                         : order.status === 'processing'
-                        ? '🔄 Đang xử lý'
-                        : order.status === 'completed'
-                        ? '✓ Hoàn thành'
-                        : '✕ Đã hủy'}
+                        ? '🚚 Chờ giao hàng'
+                        : '✅ Đã giao'}
                     </p>
                   </div>
                 </div>
@@ -244,7 +242,7 @@ export default function DashboardPage() {
           </h3>
           <ul className="text-blue-800 space-y-2">
             <li>✓ Mua sắm các sản phẩm ốp lưng điện thoại chất lượng cao</li>
-            <li>✓ Thanh toán an toàn với Stripe</li>
+            <li>✓ Thanh toán nhanh chóng và an toàn</li>
             <li>✓ Theo dõi trạng thái đơn hàng real-time</li>
             <li>✓ Giao hàng nhanh chóng trong 3-5 ngày</li>
           </ul>

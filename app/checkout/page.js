@@ -102,13 +102,14 @@ export default function CheckoutPage() {
         throw new Error(errorData.error || 'Không thể tạo checkout session');
       }
 
-      const { sessionId, orderId } = await response.json();
+      const { success, orderId } = await response.json();
 
-      // Lưu order ID để sử dụng khi quay lại success page
-      localStorage.setItem('currentOrderId', orderId.toString());
-
-      // Redirect tới Stripe Checkout
-      window.location.href = `https://checkout.stripe.com/pay/${sessionId}`;
+      if (success && orderId) {
+        // Redirect to success page with order ID
+        router.push(`/success?order_id=${orderId}`);
+      } else {
+        throw new Error('Không thể tạo đơn hàng');
+      }
     } catch (err) {
       console.error('Checkout error:', err);
       setError(err.message || 'Có lỗi xảy ra, vui lòng thử lại');
@@ -272,7 +273,7 @@ export default function CheckoutPage() {
             </button>
 
             <p className="text-center text-gray-600 text-sm">
-              💳 Thanh toán được bảo mật bằng Stripe
+              💳 Thanh toán nhanh chóng và an toàn
             </p>
           </form>
         </div>

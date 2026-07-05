@@ -155,8 +155,14 @@ export function SuccessContent() {
               {/* Status */}
               <div>
                 <p className="text-sm text-gray-500 mb-1">Trạng Thái</p>
-                <span className="inline-block px-4 py-2 bg-yellow-100 text-yellow-800 rounded-full font-semibold">
-                  ⏳ {order.status === 'pending' ? 'Chờ xác nhận' : order.status}
+                <span className={`inline-block px-4 py-2 rounded-full font-semibold ${
+                  order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                  order.status === 'processing' ? 'bg-blue-100 text-blue-800' :
+                  'bg-green-100 text-green-800'
+                }`}>
+                  {order.status === 'pending' ? '📦 Chờ lấy hàng' :
+                   order.status === 'processing' ? '🚚 Chờ giao hàng' :
+                   '✅ Đã giao'}
                 </span>
               </div>
 

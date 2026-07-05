@@ -1,9 +1,4 @@
-import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: '2024-11-20',
-});
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -35,7 +30,7 @@ export async function POST(request) {
       );
     }
 
-    // Tạo order trong Supabase
+    // Tạo order trong Supabase (assume thanh toán thành công)
     const { data: order, error: orderError } = await supabase
       .from('orders')
       .insert([
@@ -44,7 +39,7 @@ export async function POST(request) {
           total_price: totalPrice,
           address: address,
           phone: phone,
-          status: 'pending',
+          status: 'pending', // Chờ lấy hàng
         },
       ])
       .select()
@@ -72,37 +67,10 @@ export async function POST(request) {
       }
     }
 
-    // Tạo Stripe checkout session
-    const productName = cartItems?.[0]?.name || 'Ốp lưng điện thoại';
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
-      line_items: [
-        {
-          price_data: {
-            currency: 'vnd',
-            product_data: {
-              name: productName,
-              description: `Địa chỉ: ${address}\nSố điện thoại: ${phone}`,
-            },
-            unit_amount: Math.round(totalPrice),
-          },
-          quantity: 1,
-        },
-      ],
-      mode: 'payment',
-      customer_email: email,
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/success?session_id={CHECKOUT_SESSION_ID}&order_id=${order.id}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/checkout`,
-      metadata: {
-        orderId: order.id,
-        email,
-      },
-    });
-
+    // Assume payment success - direct redirect to success page
     return new Response(
       JSON.stringify({
         success: true,
-        sessionId: session.id,
         orderId: order.id,
       }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }

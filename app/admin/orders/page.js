@@ -15,7 +15,6 @@ const getStatusColor = (status) => {
     pending: 'bg-yellow-100 text-yellow-800',
     processing: 'bg-blue-100 text-blue-800',
     completed: 'bg-green-100 text-green-800',
-    cancelled: 'bg-red-100 text-red-800',
   };
   return colors[status] || colors.pending;
 };
@@ -23,21 +22,19 @@ const getStatusColor = (status) => {
 // Helper: Get status label
 const getStatusLabel = (status) => {
   const labels = {
-    pending: '⏳ Chờ xác nhận',
-    processing: '🔄 Đang xử lý',
-    completed: '✓ Hoàn thành',
-    cancelled: '✕ Đã hủy',
+    pending: '📦 Chờ lấy hàng',
+    processing: '🚚 Chờ giao hàng',
+    completed: '✅ Đã giao',
   };
-  return labels[status] || 'Chờ xác nhận';
+  return labels[status] || 'Chờ lấy hàng';
 };
 
 // Status transitions
 const getNextStatuses = (currentStatus) => {
   const transitions = {
-    pending: ['processing', 'cancelled'],
-    processing: ['completed', 'cancelled'],
+    pending: ['processing'],
+    processing: ['completed'],
     completed: [],
-    cancelled: [],
   };
   return transitions[currentStatus] || [];
 };
@@ -228,16 +225,12 @@ export default function AdminOrdersPage() {
                                 className={`px-3 py-1 rounded text-xs font-bold transition duration-200 ${
                                   nextStatus === 'processing'
                                     ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                                    : nextStatus === 'completed'
-                                    ? 'bg-green-600 hover:bg-green-700 text-white'
-                                    : 'bg-red-600 hover:bg-red-700 text-white'
+                                    : 'bg-green-600 hover:bg-green-700 text-white'
                                 }`}
                               >
                                 {nextStatus === 'processing'
-                                  ? '→ Xử Lý'
-                                  : nextStatus === 'completed'
-                                  ? '✓ Hoàn'
-                                  : '✕ Hủy'}
+                                  ? '🚚 Giao'
+                                  : '✅ Hoàn'}
                               </button>
                             ))}
                           </div>
@@ -260,10 +253,9 @@ export default function AdminOrdersPage() {
             ℹ️ Hướng Dẫn Quản Lý Đơn Hàng
           </h3>
           <ul className="text-blue-800 space-y-2 text-sm">
-            <li>• <strong>Chờ xác nhận:</strong> Đơn hàng vừa được đặt, chờ kiểm tra</li>
-            <li>• <strong>Đang xử lý:</strong> Đơn hàng được xác nhận, chuẩn bị giao</li>
-            <li>• <strong>Hoàn thành:</strong> Đơn hàng đã giao cho khách</li>
-            <li>• <strong>Đã hủy:</strong> Đơn hàng bị hủy bỏ</li>
+            <li>• <strong>Chờ lấy hàng:</strong> Đơn hàng vừa được đặt, chuẩn bị lấy từ kho</li>
+            <li>• <strong>Chờ giao hàng:</strong> Sản phẩm đang được vận chuyển đến khách</li>
+            <li>• <strong>Đã giao:</strong> Đơn hàng đã được giao cho khách hàng</li>
             <li>💾 Tất cả thay đổi được lưu tự động vào Supabase</li>
           </ul>
         </div>
