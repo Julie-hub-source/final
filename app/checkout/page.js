@@ -89,6 +89,14 @@ export default function CheckoutPage() {
 
       const { sessionId } = await response.json();
 
+      // Lưu checkout data để sử dụng khi quay lại success page
+      localStorage.setItem('checkoutData', JSON.stringify({
+        amount,
+        productName,
+        address,
+        phone,
+      }));
+
       // Redirect tới Stripe Checkout
       // Sử dụng Stripe Checkout URL trực tiếp
       window.location.href = `https://checkout.stripe.com/pay/${sessionId}`;

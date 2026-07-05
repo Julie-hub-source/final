@@ -32,19 +32,42 @@ export default function SuccessPage() {
     if (sid) {
       setSessionId(sid);
 
+      // Lấy thông tin từ localStorage
+      const checkoutData = localStorage.getItem('checkoutData');
+      let address = '';
+      let phone = '';
+      let productName = 'Ốp lưng điện thoại';
+      let amount = localStorage.getItem('lastOrderAmount') || '0';
+
+      if (checkoutData) {
+        try {
+          const data = JSON.parse(checkoutData);
+          address = data.address || '';
+          phone = data.phone || '';
+          productName = data.productName || productName;
+          amount = data.amount || amount;
+        } catch (err) {
+          console.error('Error parsing checkout data:', err);
+        }
+      }
+
       // Lưu order vào localStorage
       const orders = JSON.parse(localStorage.getItem('orders') || '[]');
       const newOrder = {
+        id: Date.now(), // ID duy nhất dựa trên timestamp
         sessionId: sid,
         email: userData.email,
-        productName: 'Ốp lưng điện thoại',
-        amount: localStorage.getItem('lastOrderAmount') || '0',
-        status: 'completed',
+        product: productName,
+        address: address,
+        phone: phone,
+        total: amount,
+        status: 'pending', // Trạng thái ban đầu
         date: new Date().toISOString(),
       };
       orders.push(newOrder);
       localStorage.setItem('orders', JSON.stringify(orders));
       localStorage.removeItem('lastOrderAmount');
+      localStorage.removeItem('checkoutData');
     }
 
     setLoading(false);
