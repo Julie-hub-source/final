@@ -3,8 +3,13 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { createClient } from '@supabase/supabase-js';
 
-// Helper function: Lấy màu status
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+// Helper: Get status color
 const getStatusColor = (status) => {
   const colors = {
     pending: 'bg-yellow-100 text-yellow-800 border-l-4 border-yellow-600',
@@ -15,7 +20,7 @@ const getStatusColor = (status) => {
   return colors[status] || colors.pending;
 };
 
-// Helper function: Lấy label status
+// Helper: Get status label
 const getStatusLabel = (status) => {
   const labels = {
     pending: '⏳ Chờ xác nhận',
@@ -32,30 +37,41 @@ export default function OrdersPage() {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  // Kiểm tra user và lấy orders từ localStorage
+  // Kiểm tra user và lấy orders từ Supabase
   useEffect(() => {
-    const userStr = localStorage.getItem('user');
-    if (!userStr) {
-      router.push('/login');
-      return;
-    }
-
-    try {
-      const userData = JSON.parse(userStr);
-      setUser(userData);
-
-      // Lấy danh sách orders
-      const ordersStr = localStorage.getItem('orders');
-      if (ordersStr) {
-        const parsedOrders = JSON.parse(ordersStr);
-        setOrders(parsedOrders);
+    const loadOrders = async () => {
+      const userStr = localStorage.getItem('user');
+      if (!userStr) {
+        router.push('/login');
+        return;
       }
-    } catch (err) {
-      console.error('Error loading orders:', err);
-      setOrders([]);
-    } finally {
-      setLoading(false);
-    }
+
+      try {
+        const userData = JSON.parse(userStr);
+        setUser(userData);
+
+        // Lấy orders từ Supabase
+        const { data: ordersData, error } = await supabase
+          .from('orders')
+          .select('*')
+          .eq('user_email', userData.email)
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error('Error fetching orders:', error);
+          setOrders([]);
+        } else {
+          setOrders(ordersData || []);
+        }
+      } catch (err) {
+        console.error('Error:', err);
+        setOrders([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadOrders();
   }, [router]);
 
   if (loading) {
@@ -149,19 +165,10 @@ export default function OrdersPage() {
                     <div className="space-y-4">
                       <div>
                         <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">
-                          ID Đơn Hàng
+                          Order ID
                         </p>
                         <p className="font-bold text-lg text-gray-900">
-                          #{order.id.toString().slice(0, 8)}
-                        </p>
-                      </div>
-
-                      <div>
-                        <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">
-                          Sản Phẩm
-                        </p>
-                        <p className="font-semibold text-gray-900">
-                          {order.product}
+                          #{order.id}
                         </p>
                       </div>
 
@@ -170,7 +177,7 @@ export default function OrdersPage() {
                           Ngày Đặt
                         </p>
                         <p className="font-semibold text-gray-900">
-                          {new Date(order.date).toLocaleDateString('vi-VN', {
+                          {new Date(order.created_at).toLocaleDateString('vi-VN', {
                             day: '2-digit',
                             month: '2-digit',
                             year: 'numeric',
@@ -186,7 +193,7 @@ export default function OrdersPage() {
                           Tổng Tiền
                         </p>
                         <p className="font-bold text-2xl text-blue-600">
-                          ₫ {parseInt(order.total).toLocaleString('vi-VN')}
+                          ₫ {parseInt(order.total_price).toLocaleString('vi-VN')}
                         </p>
                       </div>
 
@@ -211,6 +218,13 @@ export default function OrdersPage() {
                       <p className="text-gray-600 mb-1">📞 Số điện thoại:</p>
                       <p className="font-semibold text-gray-900">{order.phone}</p>
                     </div>
+                  </div>
+
+                  {/* Support Button */}
+                  <div className="mt-4">
+                    <button className="text-blue-600 hover:text-blue-700 font-semibold text-sm">
+                      📞 Liên hệ hỗ trợ
+                    </button>
                   </div>
                 </div>
               ))}

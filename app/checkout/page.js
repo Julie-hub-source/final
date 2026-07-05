@@ -67,38 +67,42 @@ export default function CheckoutPage() {
     }
 
     try {
-      // Gọi API checkout
+      // Prepare cart items
+      const cartItems = [
+        {
+          id: 1,
+          name: productName,
+          price: amount,
+          quantity: 1,
+        },
+      ];
+
+      // Gọi API checkout (Supabase)
       const response = await fetch('/api/checkout', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          amount: Math.round(amount * 100), // Chuyển đổi VND sang đơn vị nhỏ nhất
           email: user.email,
-          productName,
+          cartItems,
           address,
           phone,
+          totalPrice: amount,
         }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create checkout session');
+        throw new Error(errorData.error || 'Không thể tạo checkout session');
       }
 
-      const { sessionId } = await response.json();
+      const { sessionId, orderId } = await response.json();
 
-      // Lưu checkout data để sử dụng khi quay lại success page
-      localStorage.setItem('checkoutData', JSON.stringify({
-        amount,
-        productName,
-        address,
-        phone,
-      }));
+      // Lưu order ID để sử dụng khi quay lại success page
+      localStorage.setItem('currentOrderId', orderId.toString());
 
       // Redirect tới Stripe Checkout
-      // Sử dụng Stripe Checkout URL trực tiếp
       window.location.href = `https://checkout.stripe.com/pay/${sessionId}`;
     } catch (err) {
       console.error('Checkout error:', err);

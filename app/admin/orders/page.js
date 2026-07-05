@@ -3,8 +3,13 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { createClient } from '@supabase/supabase-js';
 
-// Helper function: Lấy màu status
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+// Helper: Get status color
 const getStatusColor = (status) => {
   const colors = {
     pending: 'bg-yellow-100 text-yellow-800',
@@ -15,7 +20,7 @@ const getStatusColor = (status) => {
   return colors[status] || colors.pending;
 };
 
-// Helper function: Lấy label status
+// Helper: Get status label
 const getStatusLabel = (status) => {
   const labels = {
     pending: '⏳ Chờ xác nhận',
@@ -43,39 +48,65 @@ export default function AdminOrdersPage() {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  // Kiểm tra user và lấy orders từ localStorage
+  // Kiểm tra user và lấy tất cả orders từ Supabase
   useEffect(() => {
-    const userStr = localStorage.getItem('user');
-    if (!userStr) {
-      router.push('/login');
-      return;
-    }
-
-    try {
-      const userData = JSON.parse(userStr);
-      setUser(userData);
-
-      // Lấy danh sách orders
-      const ordersStr = localStorage.getItem('orders');
-      if (ordersStr) {
-        const parsedOrders = JSON.parse(ordersStr);
-        setOrders(parsedOrders);
+    const loadOrders = async () => {
+      const userStr = localStorage.getItem('user');
+      if (!userStr) {
+        router.push('/login');
+        return;
       }
-    } catch (err) {
-      console.error('Error loading orders:', err);
-      setOrders([]);
-    } finally {
-      setLoading(false);
-    }
+
+      try {
+        const userData = JSON.parse(userStr);
+        setUser(userData);
+
+        // Lấy tất cả orders (admin view)
+        const { data: ordersData, error } = await supabase
+          .from('orders')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error('Error fetching orders:', error);
+          setOrders([]);
+        } else {
+          setOrders(ordersData || []);
+        }
+      } catch (err) {
+        console.error('Error:', err);
+        setOrders([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadOrders();
   }, [router]);
 
   // Cập nhật status order
-  const updateOrderStatus = (orderId, newStatus) => {
-    const updatedOrders = orders.map((order) =>
-      order.id === orderId ? { ...order, status: newStatus } : order
-    );
-    setOrders(updatedOrders);
-    localStorage.setItem('orders', JSON.stringify(updatedOrders));
+  const updateOrderStatus = async (orderId, newStatus) => {
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .update({ status: newStatus })
+        .eq('id', orderId);
+
+      if (error) {
+        console.error('Error updating order:', error);
+        alert('Lỗi cập nhật trạng thái');
+        return;
+      }
+
+      // Update local state
+      const updatedOrders = orders.map((order) =>
+        order.id === orderId ? { ...order, status: newStatus } : order
+      );
+      setOrders(updatedOrders);
+    } catch (err) {
+      console.error('Error:', err);
+      alert('Có lỗi xảy ra');
+    }
   };
 
   if (loading) {
@@ -125,10 +156,7 @@ export default function AdminOrdersPage() {
                 <thead className="bg-gray-100 border-b border-gray-200">
                   <tr>
                     <th className="px-6 py-4 text-left text-sm font-bold text-gray-900">
-                      ID
-                    </th>
-                    <th className="px-6 py-4 text-left text-sm font-bold text-gray-900">
-                      Sản Phẩm
+                      Order ID
                     </th>
                     <th className="px-6 py-4 text-left text-sm font-bold text-gray-900">
                       Email
@@ -137,13 +165,16 @@ export default function AdminOrdersPage() {
                       Địa Chỉ
                     </th>
                     <th className="px-6 py-4 text-left text-sm font-bold text-gray-900">
-                      Điện Thoại
+                      SĐT
                     </th>
                     <th className="px-6 py-4 text-right text-sm font-bold text-gray-900">
                       Tổng Tiền
                     </th>
                     <th className="px-6 py-4 text-center text-sm font-bold text-gray-900">
                       Trạng Thái
+                    </th>
+                    <th className="px-6 py-4 text-left text-sm font-bold text-gray-900">
+                      Ngày Tạo
                     </th>
                     <th className="px-6 py-4 text-center text-sm font-bold text-gray-900">
                       Hành Động
@@ -157,13 +188,10 @@ export default function AdminOrdersPage() {
                       className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}
                     >
                       <td className="px-6 py-4 text-sm text-gray-900 font-semibold">
-                        #{order.id.toString().slice(0, 8)}
+                        #{order.id}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-700">
-                        {order.product}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-700">
-                        {order.email}
+                        {order.user_email}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-700 max-w-xs">
                         <span className="truncate">{order.address}</span>
@@ -172,7 +200,7 @@ export default function AdminOrdersPage() {
                         {order.phone}
                       </td>
                       <td className="px-6 py-4 text-sm font-bold text-blue-600 text-right">
-                        ₫ {parseInt(order.total).toLocaleString('vi-VN')}
+                        ₫ {parseInt(order.total_price).toLocaleString('vi-VN')}
                       </td>
                       <td className="px-6 py-4 text-center">
                         <span
@@ -183,9 +211,12 @@ export default function AdminOrdersPage() {
                           {getStatusLabel(order.status)}
                         </span>
                       </td>
+                      <td className="px-6 py-4 text-sm text-gray-700">
+                        {new Date(order.created_at).toLocaleDateString('vi-VN')}
+                      </td>
                       <td className="px-6 py-4 text-center">
                         {getNextStatuses(order.status).length > 0 && (
-                          <div className="flex gap-2 justify-center">
+                          <div className="flex gap-2 justify-center flex-wrap">
                             {getNextStatuses(order.status).map((nextStatus) => (
                               <button
                                 key={nextStatus}
@@ -208,7 +239,7 @@ export default function AdminOrdersPage() {
                           </div>
                         )}
                         {getNextStatuses(order.status).length === 0 && (
-                          <span className="text-gray-500 text-xs">Không hành động</span>
+                          <span className="text-gray-500 text-xs">Kết thúc</span>
                         )}
                       </td>
                     </tr>
@@ -222,13 +253,14 @@ export default function AdminOrdersPage() {
         {/* Info Box */}
         <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
           <h3 className="text-lg font-bold text-blue-900 mb-3">
-            ℹ️ Hướng Dẫn
+            ℹ️ Hướng Dẫn Quản Lý Đơn Hàng
           </h3>
           <ul className="text-blue-800 space-y-2 text-sm">
-            <li>• <strong>Chờ xác nhận:</strong> Đơn hàng vừa được đặt</li>
+            <li>• <strong>Chờ xác nhận:</strong> Đơn hàng vừa được đặt, chờ kiểm tra</li>
             <li>• <strong>Đang xử lý:</strong> Đơn hàng được xác nhận, chuẩn bị giao</li>
             <li>• <strong>Hoàn thành:</strong> Đơn hàng đã giao cho khách</li>
             <li>• <strong>Đã hủy:</strong> Đơn hàng bị hủy bỏ</li>
+            <li>💾 Tất cả thay đổi được lưu tự động vào Supabase</li>
           </ul>
         </div>
       </main>

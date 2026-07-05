@@ -3,74 +3,63 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export default function SuccessPage() {
   const [user, setUser] = useState(null);
-  const [sessionId, setSessionId] = useState('');
+  const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    // Kiểm tra user
-    const userStr = localStorage.getItem('user');
-    if (!userStr) {
-      router.push('/login');
-      return;
-    }
-
-    try {
-      const userData = JSON.parse(userStr);
-      setUser(userData);
-    } catch (err) {
-      router.push('/login');
-      return;
-    }
-
-    // Lấy session ID từ URL
-    const sid = searchParams.get('session_id');
-    if (sid) {
-      setSessionId(sid);
-
-      // Lấy thông tin từ localStorage
-      const checkoutData = localStorage.getItem('checkoutData');
-      let address = '';
-      let phone = '';
-      let productName = 'Ốp lưng điện thoại';
-      let amount = localStorage.getItem('lastOrderAmount') || '0';
-
-      if (checkoutData) {
-        try {
-          const data = JSON.parse(checkoutData);
-          address = data.address || '';
-          phone = data.phone || '';
-          productName = data.productName || productName;
-          amount = data.amount || amount;
-        } catch (err) {
-          console.error('Error parsing checkout data:', err);
-        }
+    const initPage = async () => {
+      // Kiểm tra user
+      const userStr = localStorage.getItem('user');
+      if (!userStr) {
+        router.push('/login');
+        return;
       }
 
-      // Lưu order vào localStorage
-      const orders = JSON.parse(localStorage.getItem('orders') || '[]');
-      const newOrder = {
-        id: Date.now(), // ID duy nhất dựa trên timestamp
-        sessionId: sid,
-        email: userData.email,
-        product: productName,
-        address: address,
-        phone: phone,
-        total: amount,
-        status: 'pending', // Trạng thái ban đầu
-        date: new Date().toISOString(),
-      };
-      orders.push(newOrder);
-      localStorage.setItem('orders', JSON.stringify(orders));
-      localStorage.removeItem('lastOrderAmount');
-      localStorage.removeItem('checkoutData');
-    }
+      try {
+        const userData = JSON.parse(userStr);
+        setUser(userData);
 
-    setLoading(false);
+        // Lấy order ID từ URL hoặc localStorage
+        let orderId = searchParams.get('order_id');
+        if (!orderId) {
+          orderId = localStorage.getItem('currentOrderId');
+        }
+
+        if (orderId) {
+          // Lấy order từ Supabase
+          const { data: orderData, error } = await supabase
+            .from('orders')
+            .select('*')
+            .eq('id', parseInt(orderId))
+            .single();
+
+          if (orderData) {
+            setOrder(orderData);
+          } else if (error) {
+            console.error('Error fetching order:', error);
+          }
+
+          localStorage.removeItem('currentOrderId');
+        }
+      } catch (err) {
+        console.error('Error:', err);
+        router.push('/login');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initPage();
   }, [router, searchParams]);
 
   if (loading) {
@@ -116,56 +105,71 @@ export default function SuccessPage() {
         </div>
 
         {/* Order Details */}
-        <div className="bg-gray-50 rounded-lg p-6 mb-8 border border-gray-200">
-          <h2 className="text-xl font-bold text-gray-900 mb-6">
-            📋 Chi Tiết Đơn Hàng
-          </h2>
+        {order && (
+          <div className="bg-gray-50 rounded-lg p-6 mb-8 border border-gray-200">
+            <h2 className="text-xl font-bold text-gray-900 mb-6">
+              📋 Chi Tiết Đơn Hàng
+            </h2>
 
-          <div className="space-y-4">
-            {/* Email */}
-            <div>
-              <p className="text-sm text-gray-500 mb-1">Email</p>
-              <p className="text-lg font-semibold text-gray-900">{user.email}</p>
-            </div>
-
-            {/* Session ID */}
-            {sessionId && (
+            <div className="space-y-4">
+              {/* Order ID */}
               <div>
-                <p className="text-sm text-gray-500 mb-1">Session ID</p>
-                <div className="flex items-center gap-3">
-                  <code className="flex-1 bg-white border border-gray-300 rounded px-3 py-2 text-sm font-mono text-gray-900 break-all">
-                    {sessionId}
-                  </code>
-                  <button
-                    onClick={() => {
-                      navigator.clipboard.writeText(sessionId);
-                      alert('Đã sao chép!');
-                    }}
-                    className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition duration-200 whitespace-nowrap text-sm"
-                  >
-                    📋 Copy
-                  </button>
-                </div>
+                <p className="text-sm text-gray-500 mb-1">Order ID</p>
+                <p className="text-lg font-semibold text-gray-900">
+                  #{order.id}
+                </p>
               </div>
-            )}
 
-            {/* Status */}
-            <div>
-              <p className="text-sm text-gray-500 mb-1">Trạng Thái</p>
-              <span className="inline-block px-4 py-2 bg-green-100 text-green-800 rounded-full font-semibold">
-                ✓ Hoàn Tất
-              </span>
-            </div>
+              {/* Email */}
+              <div>
+                <p className="text-sm text-gray-500 mb-1">Email</p>
+                <p className="text-lg font-semibold text-gray-900">
+                  {order.user_email}
+                </p>
+              </div>
 
-            {/* Date */}
-            <div>
-              <p className="text-sm text-gray-500 mb-1">Ngày Tạo</p>
-              <p className="text-lg font-semibold text-gray-900">
-                {new Date().toLocaleString('vi-VN')}
-              </p>
+              {/* Total Price */}
+              <div>
+                <p className="text-sm text-gray-500 mb-1">Tổng Tiền</p>
+                <p className="text-2xl font-bold text-blue-600">
+                  ₫ {parseInt(order.total_price).toLocaleString('vi-VN')}
+                </p>
+              </div>
+
+              {/* Address */}
+              <div>
+                <p className="text-sm text-gray-500 mb-1">Địa Chỉ</p>
+                <p className="text-lg font-semibold text-gray-900">
+                  {order.address}
+                </p>
+              </div>
+
+              {/* Phone */}
+              <div>
+                <p className="text-sm text-gray-500 mb-1">Số Điện Thoại</p>
+                <p className="text-lg font-semibold text-gray-900">
+                  {order.phone}
+                </p>
+              </div>
+
+              {/* Status */}
+              <div>
+                <p className="text-sm text-gray-500 mb-1">Trạng Thái</p>
+                <span className="inline-block px-4 py-2 bg-yellow-100 text-yellow-800 rounded-full font-semibold">
+                  ⏳ {order.status === 'pending' ? 'Chờ xác nhận' : order.status}
+                </span>
+              </div>
+
+              {/* Date */}
+              <div>
+                <p className="text-sm text-gray-500 mb-1">Ngày Đặt</p>
+                <p className="text-lg font-semibold text-gray-900">
+                  {new Date(order.created_at).toLocaleString('vi-VN')}
+                </p>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Info Box */}
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
