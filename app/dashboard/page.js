@@ -50,14 +50,19 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-xl text-gray-600">Đang tải...</div>
       </div>
     );
   }
 
+  // Không render gì nếu chưa load xong
   if (!user) {
-    return null;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-xl text-gray-600">Đang tải...</div>
+      </div>
+    );
   }
 
   return (
