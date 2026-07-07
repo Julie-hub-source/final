@@ -3,6 +3,11 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export default function DashboardPage() {
   const [user, setUser] = useState(null);
@@ -10,30 +15,40 @@ export default function DashboardPage() {
   const [orders, setOrders] = useState([]);
   const router = useRouter();
 
-  // Kiểm tra user và lấy orders
   useEffect(() => {
-    const userStr = localStorage.getItem('user');
-    if (!userStr) {
-      router.push('/login');
-      return;
-    }
-
-    try {
-      const userData = JSON.parse(userStr);
-      setUser(userData);
-
-      // Lấy danh sách orders từ localStorage
-      const ordersStr = localStorage.getItem('orders');
-      if (ordersStr) {
-        const parsedOrders = JSON.parse(ordersStr);
-        setOrders(parsedOrders);
+    const initDashboard = async () => {
+      const userStr = localStorage.getItem('user');
+      if (!userStr) {
+        router.push('/login');
+        return;
       }
-    } catch (err) {
-      console.error('Error loading user data:', err);
-      router.push('/login');
-    } finally {
-      setLoading(false);
-    }
+
+      try {
+        const userData = JSON.parse(userStr);
+        setUser(userData);
+
+        // Fetch orders từ Supabase
+        const { data: ordersData, error } = await supabase
+          .from('orders')
+          .select('*')
+          .eq('user_email', userData.email)
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error('Error loading orders:', error);
+          setOrders([]);
+        } else {
+          setOrders(ordersData || []);
+        }
+      } catch (err) {
+        console.error('Error:', err);
+        router.push('/login');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initDashboard();
   }, [router]);
 
   const handleLogout = () => {
