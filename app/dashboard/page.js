@@ -5,16 +5,6 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-if (typeof window !== 'undefined') {
-  console.log('Dashboard - Supabase URL:', supabaseUrl ? 'SET' : 'UNDEFINED');
-  console.log('Dashboard - Supabase Key:', supabaseAnonKey ? 'SET' : 'UNDEFINED');
-}
-
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
 export default function DashboardPage() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -33,7 +23,18 @@ export default function DashboardPage() {
         const userData = JSON.parse(userStr);
         setUser(userData);
 
-        console.log('Fetching orders for:', userData.email);
+        // Create Supabase client only when needed
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+        if (!supabaseUrl || !supabaseAnonKey) {
+          console.error('Missing Supabase credentials');
+          setOrders([]);
+          setLoading(false);
+          return;
+        }
+
+        const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
         // Fetch orders từ Supabase
         const { data: ordersData, error } = await supabase
@@ -41,8 +42,6 @@ export default function DashboardPage() {
           .select('*')
           .eq('user_email', userData.email)
           .order('created_at', { ascending: false });
-
-        console.log('Orders fetch result - Data count:', ordersData?.length || 0, 'Error:', error?.message || 'none');
 
         if (error) {
           console.error('Error loading orders:', error);
@@ -52,7 +51,7 @@ export default function DashboardPage() {
         }
       } catch (err) {
         console.error('Error:', err);
-        router.push('/login');
+        setOrders([]);
       } finally {
         setLoading(false);
       }

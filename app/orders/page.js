@@ -5,10 +5,6 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
 // Helper: Get status color
 const getStatusColor = (status) => {
   const colors = {
@@ -47,6 +43,19 @@ export default function OrdersPage() {
       try {
         const userData = JSON.parse(userStr);
         setUser(userData);
+
+        // Create Supabase client only when needed
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+        if (!supabaseUrl || !supabaseAnonKey) {
+          console.error('Missing Supabase credentials');
+          setOrders([]);
+          setLoading(false);
+          return;
+        }
+
+        const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
         // Lấy orders từ Supabase
         const { data: ordersData, error } = await supabase

@@ -5,10 +5,6 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
 export default function ProductsPage() {
   const [user, setUser] = useState(null);
   const [products, setProducts] = useState([]);
@@ -25,6 +21,19 @@ export default function ProductsPage() {
 
       try {
         setUser(JSON.parse(userStr));
+
+        // Create Supabase client only when needed
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+        if (!supabaseUrl || !supabaseAnonKey) {
+          console.error('Missing Supabase credentials');
+          setProducts([]);
+          setLoading(false);
+          return;
+        }
+
+        const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
         // Fetch products từ Supabase
         const { data: productsData, error } = await supabase
